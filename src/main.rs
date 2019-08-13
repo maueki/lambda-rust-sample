@@ -8,6 +8,7 @@ use serde_dynamodb;
 use env_logger;
 use log::{error, warn, info, debug};
 use std::env;
+use failure::format_err;
 
 use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput};
 
@@ -56,8 +57,8 @@ fn handler(_: Value, c: Context) -> Result<Item, HandlerError> {
         ..Default::default()
     };
 
-    let client = DynamoDbClient::new(Region::Custom {name: "localhost".to_owned(),
-                                                     endpoint: "http://localhost:8000".to_owned()});
+    let client = DynamoDbClient::new(Region::Custom {name: "ap-northeast-1".to_owned(),
+                                                     endpoint: "http://192.168.0.23:8000".to_owned()});
     match client.get_item(input).sync() {
         Ok(result) => {
             match result.item {
@@ -71,8 +72,7 @@ fn handler(_: Value, c: Context) -> Result<Item, HandlerError> {
             }
         },
         Err(error) => {
-            Err(c.new_error(error.description()))
+            Err(format_err!("{}", error.description()).into())
         }
     }
 }
-
