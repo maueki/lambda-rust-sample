@@ -1,15 +1,15 @@
-use std::error::Error;
-use lambda_runtime::{error::HandlerError, Context};
+use env_logger;
+use failure::format_err;
 use lambda_http::{lambda, IntoResponse, Request, Response};
+use lambda_runtime::{error::HandlerError, Context};
+use log::{debug, error, info, warn};
 use rusoto_core::Region;
-use std::collections::HashMap;
-use serde_json::Value;
 use serde_derive::{Deserialize, Serialize};
 use serde_dynamodb;
-use env_logger;
-use log::{error, warn, info, debug};
+use serde_json::Value;
+use std::collections::HashMap;
 use std::env;
-use failure::format_err;
+use std::error::Error;
 
 use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput};
 
@@ -26,7 +26,7 @@ struct ItemInfo {
     rating: f64,
 }
 
-fn main() -> Result<(), Box<dyn Error>>{
+fn main() -> Result<(), Box<dyn Error>> {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
     lambda!(handler);
@@ -58,8 +58,10 @@ fn handler(_: Request, c: Context) -> Result<impl IntoResponse, HandlerError> {
         ..Default::default()
     };
 
-    let client = DynamoDbClient::new(Region::Custom {name: "ap-northeast-1".to_owned(),
-                                                     endpoint: "http://192.168.0.23:8000".to_owned()});
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "ap-northeast-1".to_owned(),
+        endpoint: "http://192.168.11.201:8000".to_owned(),
+    });
     match client.get_item(input).sync() {
         Ok(result) => {
             match result.item {
@@ -78,9 +80,7 @@ fn handler(_: Request, c: Context) -> Result<impl IntoResponse, HandlerError> {
                         .expect("failed to render response"))
                 }
             }
-        },
-        Err(error) => {
-            Err(format_err!("{}", error.description()).into())
         }
+        Err(error) => Err(format_err!("{}", error.description()).into()),
     }
 }
