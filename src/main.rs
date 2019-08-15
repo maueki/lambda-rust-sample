@@ -1,5 +1,6 @@
 use std::error::Error;
-use lambda_runtime::{error::HandlerError, lambda, Context};
+use lambda_runtime::{error::HandlerError, Context};
+use lambda_http::{lambda, IntoResponse, Request, Response};
 use rusoto_core::Region;
 use std::collections::HashMap;
 use serde_json::Value;
@@ -32,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>>{
     Ok(())
 }
 
-fn handler(_: Value, c: Context) -> Result<Item, HandlerError> {
+fn handler(_: Request, c: Context) -> Result<impl IntoResponse, HandlerError> {
     let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
 
     query_key.insert(
@@ -63,11 +64,18 @@ fn handler(_: Value, c: Context) -> Result<Item, HandlerError> {
         Ok(result) => {
             match result.item {
                 Some(item) => {
-                    Ok(serde_dynamodb::from_hashmap(item).unwrap())
+                    //Ok(serde_dynamodb::from_hashmap(item).unwrap())
+                    Ok(Response::builder()
+                        .status(200)
+                        .body::<String>(serde_dynamodb::from_hashmap(item).unwrap())
+                        .expect("failed to render response"))
                 }
                 None => {
                     error!("{}", "no item was found.");
-                    Ok(Default::default())
+                    Ok(Response::builder()
+                        .status(404)
+                        .body("not found".to_owned())
+                        .expect("failed to render response"))
                 }
             }
         },
