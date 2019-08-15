@@ -20,7 +20,7 @@ plugins:
  
 functions:
   dynamodb-getitem-sample:
-    timeout: 90
+    timeout: 600
     handler: dynamodb-getitem-sample
     events:
       - http:

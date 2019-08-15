@@ -6,7 +6,7 @@ use log::{debug, error, info, warn};
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
 use serde_dynamodb;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
@@ -63,24 +63,16 @@ fn handler(_: Request, c: Context) -> Result<impl IntoResponse, HandlerError> {
         endpoint: "http://192.168.11.201:8000".to_owned(),
     });
     match client.get_item(input).sync() {
-        Ok(result) => {
-            match result.item {
-                Some(item) => {
-                    //Ok(serde_dynamodb::from_hashmap(item).unwrap())
-                    Ok(Response::builder()
-                        .status(200)
-                        .body::<String>(serde_dynamodb::from_hashmap(item).unwrap())
-                        .expect("failed to render response"))
-                }
-                None => {
-                    error!("{}", "no item was found.");
-                    Ok(Response::builder()
-                        .status(404)
-                        .body("not found".to_owned())
-                        .expect("failed to render response"))
-                }
+        Ok(result) => match result.item {
+            Some(item) => {
+                let item: Item = serde_dynamodb::from_hashmap(item).unwrap();
+                Ok(json!(item))
             }
-        }
+            None => {
+                error!("{}", "no item was found.");
+                Ok(json!(""))
+            }
+        },
         Err(error) => Err(format_err!("{}", error.description()).into()),
     }
 }
